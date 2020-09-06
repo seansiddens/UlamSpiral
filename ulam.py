@@ -1,6 +1,12 @@
 import turtle
 import pyglet
+from pyglet import shapes
 import math
+import colorsys
+
+
+def hsv2rgb(h, s, v):
+    return tuple(round(i * 255) for i in colorsys.hsv_to_rgb(h, s, v))
 
 
 def turtle_spiral(iterations):
@@ -94,18 +100,24 @@ def draw_polynomial(b, c, iterations):
 
 
 def generate_spiral(iterations):
-    coords = [(0,0)]
+    coords = [(0, 0)]
     count = 0
     unit_vec = (1, 0)  # Starting direction facing left
     vec = (0, 0)       # Origin point
     n = 1
+    prime_list = generate_primes(iterations * 2)
+    print(len(prime_list))
+    index = 0
+
     while count < iterations:
         # forward  * n > draw point > left > forward * n > draw point > left
 
         # go forward n times
         for i in range(n):
             vec = (vec[0] + unit_vec[0], vec[1] + unit_vec[1])
-            coords.append(vec)  # forward
+            if prime_list[index] == count:
+                coords.append(vec)  # forward
+                index += 1
             count += 1
 
         # turn left
@@ -114,7 +126,9 @@ def generate_spiral(iterations):
         # go forward n times
         for i in range(n):
             vec = (vec[0] + unit_vec[0], vec[1] + unit_vec[1])
-            coords.append(vec)  # forward
+            if prime_list[index] == count:
+                coords.append(vec)  # forward
+                index += 1
             count += 1
 
         # turn left
@@ -135,16 +149,55 @@ def rotate(point, angle):
 
 
 def render_spiral(coords):
-    window = pyglet.window.Window
-    pass
+    window = pyglet.window.Window(800, 800)
+    scale = 2
+    batch = pyglet.graphics.Batch()
+
+    origin = (window.width / 2, window.height / 2)
+    color_step = 1 / len(coords)
+    color_count = 1
+
+    points = []
+    for point in coords:
+        color = hsv2rgb(color_step * color_count, 1.0, 1.0)
+        new_point = shapes.Circle(origin[0] + (point[0] * scale), origin[1] + (point[1] * scale), 1, segments=3,
+                                  color=color, batch=batch)
+        points.append(new_point)
+        color_count += 1
+
+    @window.event()
+    def on_draw():
+        window.clear()
+        batch.draw()
+
+    pyglet.app.run()
+
+
+# Returns list of primes below a given number using
+# Sieve of Eratosthenes
+def generate_primes(iterations):
+    list = [True] * (iterations+1)
+
+    for i in range(2, (int(iterations**(1/2))) + 1):    # Iterates over numbers, from 2 to the sqrt(iterations)
+        if list[i]:                                     # If a number is marked as prime, it will continue from there
+            for j in range(i**2, iterations+1, i):      # unmark multiple of that prime
+                list[j] = False
+
+    primes = []
+    j = 2
+    for x in list[2:iterations+1]:
+        if x:
+            primes.append(j)
+        j += 1
+
+    return primes
 
 
 if __name__ == '__main__':
+    spiral_points = generate_spiral(200000)
 
-    iterations = 10000
-    turtle_spiral(iterations)
+    render_spiral(spiral_points)
 
-    points = generate_spiral(100000)
 
 
 
